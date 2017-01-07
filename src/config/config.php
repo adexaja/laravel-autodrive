@@ -18,7 +18,7 @@ return [
     | FileToken where to save token while its available and rewrite it if token refresh.
     |
     */
-    'client_id'       => env('GOOGLE_CLIENT_ID', ''),
+    'client_id'       => env('GOOGLE_CLIENT_ID', ''), // baru
     'cSlient_secret'   => env('GOOGLE_CLIENT_SECRET', ''),
     'redirect_uri'    => env('GOOGLE_REDIRECT', ''),
     'scopes'          => [],
