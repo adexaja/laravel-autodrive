@@ -33,7 +33,7 @@ class GoogleDrive
 
     protected $dirInfo = "adexaja.drive";
 
-    public function _construct(Client $client){
+    public function __construct(Client $client){
         $this->client = $client;
         $this->service = $client->make("drive");
         $this->oAuth2 = $client->make("oauth2");
@@ -82,7 +82,7 @@ class GoogleDrive
             // there was a problem - re-make the system directory
             $params = array(
                 'q'=>"mimeType = 'application/vnd.google-apps.folder' and title = '" . self::SYSDIR . "'",
-                'maxResults'=>1
+                'pageSize'=>1
             );
             $gquery = $this->service->files->listFiles($params);
             $sysdir = $gquery->getFiles();
@@ -246,13 +246,13 @@ class GoogleDrive
 
                     $parameters = array(
                         'q'=>$where,
-                        'maxResults'=>50
+                        'pageSize'=>50
                     );
                 else:
                     $parameters = array(
                         // 'q'=>"mimeType != 'application/vnd.google-apps.folder' and mimeType = 'image/gif' and mimeType = 'image/jpeg' and mimeType = 'image/png'",
                         'q'=>"mimeType != 'application/vnd.google-apps.folder'",
-                        'maxResults'=>50
+                        'pageSize'=>50
                     );
                 endif;
 
@@ -261,7 +261,7 @@ class GoogleDrive
                 endif;
 
                 $files = $this->service->files->listFiles($parameters);
-                $result = array_merge($result, $files->getFiles());
+                $result = $files;
                 $pageToken = $files->getNextPageToken();
 
             } catch (Exception $ex) {

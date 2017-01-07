@@ -54,7 +54,7 @@ class Client
         // set developer key
         $this->client->setDeveloperKey(array_get($config, 'developer_key', ''));
 
-        $this->fileToken = array_get($config, 'file_token', '');
+        $this->fileToken = array_get($config, 'fileToken', '');
 
         // auth for service account
         if (array_get($config, 'service.enable', false)) {
@@ -70,8 +70,8 @@ class Client
 
         if($this->token) {
             $this->client->setAccessToken($this->token);
-        } else if($code = Input::get("code")) {
-            $this->client->authenticate($code);
+        } else if(request()->has("code")) {
+            $this->client->authenticate(request()->input("code"));
             $this->token = $this->client->getAccessToken();
             $this->client->setAccessToken($this->token);
         }
@@ -109,7 +109,7 @@ class Client
             if($this->fileToken) {
                 // $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
                 if(!file_exists(dirname($this->fileToken))) {
-                    mkdir(dirname($this->fileToken), 0700, true);
+                    mkdir(dirname($this->fileToken), 0777, true);
                 }
                 file_put_contents($this->fileToken, json_encode($this->token));
             } else {
