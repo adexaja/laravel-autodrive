@@ -27,7 +27,7 @@ class GoogleDrive
     /**
      * @var \Google_Service_Oauth2
      */
-    protected $oAuth2;
+    protected $oAuth2; //oath cient
 
     protected $appName = "Google Drive Smart Kampus";
 
