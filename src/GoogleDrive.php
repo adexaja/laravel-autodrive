@@ -27,7 +27,7 @@ class GoogleDrive
     /**
      * @var \Google_Service_Oauth2
      */
-    protected $oAuth2;
+    protected $oAuth2; //oath cient
 
     protected $appName = "Google Drive Smart Kampus";
 
@@ -39,12 +39,21 @@ class GoogleDrive
         $this->oAuth2 = $client->make("oauth2");
     }
 
+    /**
+     * @return \Google_Service_Oauth2_Userinfoplus
+     */
+
     public function getUser(){
         if(!$this->client) {
             throw new \Google_Exception("You MUST initialize the Google_Client before attempting getUser()");
         }
         return $this->oAuth2->userinfo->get();
     }
+
+    /**
+     * @param string $allow
+     * @return \Google_Service_Drive_Permission
+     */
     public function getFilePermissions($allow="private") {
         $permission = new \Google_Service_Drive_Permission();
         switch($allow):
@@ -72,6 +81,9 @@ class GoogleDrive
         Session::put($this->appName . "." . $this->dirInfo, $sysdirinfo);
     }
 
+    /**
+     * @return \Google_Service_Drive_DriveFile
+     */
     public function getSystemDirectory() {
         $dirinfo = $this->getSystemDirectoryInfo();
         if(!empty($dirinfo)):
@@ -81,7 +93,7 @@ class GoogleDrive
         else:
             // there was a problem - re-make the system directory
             $params = array(
-                'q'=>"mimeType = 'application/vnd.google-apps.folder' and title = '" . self::SYSDIR . "'",
+                'q'=>"mimeType = 'application/vnd.google-apps.folder' and title = '" . $this->dirInfo . "'",
                 'pageSize'=>1
             );
             $gquery = $this->service->files->listFiles($params);
@@ -99,10 +111,41 @@ class GoogleDrive
         return $sysdir;
     }
 
+    /**
+     * @param $name
+     * @return \Google_Service_Drive_DriveFile
+     */
+    public function isDirectoryExists($name) {
+            // there was a problem - re-make the system directory
+            $params = array(
+                'q'=>"mimeType = 'application/vnd.google-apps.folder' and title = '" . $name . "'",
+                'pageSize'=>1
+            );
+            $gquery = $this->service->files->listFiles($params);
+            $sysdir = $gquery->getFiles();
+            // sysdir not found
+            if(empty($sysdir)):
+                // create system directory
+                $sysdir = $this->newDirectory($this->dirInfo, null, "public");
+                $this->setSystemDirectoryInfo($sysdir);
+            else:
+                $sysdir = $sysdir[0];
+            endif;
+        // return the system directory
+        return $sysdir;
+    }
+
     public function getFileUrl(\Google_Service_Drive_DriveFile $file, $parentId) {
         return "https://googledrive.com/host/{$parentId}/" . $file->getName();
     }
 
+    /**
+     * @param $path
+     * @param $title
+     * @param null $parentId
+     * @param string $allow
+     * @return \Google_Service_Drive_DriveFile
+     */
     public function uploadFile($path, $title, $parentId=null, $allow= "private") {
         /** @TODO Build in re-try parameters **/
         $newFile = new \Google_Service_Drive_DriveFile();
@@ -125,6 +168,14 @@ class GoogleDrive
         endif;
     }
 
+    /**
+     * @param $originFileId
+     * @param $copyTitle
+     * @param null $parentId
+     * @param string $allow
+     * @return \Google_Service_Drive_DriveFile
+     */
+
     public function copyFile($originFileId, $copyTitle, $parentId=null, $allow="private") {
         $copiedFile = new \Google_Service_Drive_DriveFile();
         $copiedFile->setName($copyTitle);
@@ -144,6 +195,17 @@ class GoogleDrive
         }
         return NULL;
     }
+
+    /**
+     * @param $title
+     * @param $description
+     * @param $mimeType
+     * @param $filename
+     * @param null $parentId
+     * @param string $allow
+     * @return mixed
+     * @throws \Google_Service_Drive_DriveFile
+     */
 
     public function newFile($title, $description, $mimeType, $filename, $parentId=null, $allow="private") {
 
@@ -192,6 +254,13 @@ class GoogleDrive
         }
     }
 
+    /**
+     * @param $folderName
+     * @param null $parentId
+     * @param string $allow
+     * @return \Google_Service_Drive_DriveFile
+     */
+
     public function newDirectory($folderName, $parentId=null, $allow="private") {
         $file = new \Google_Service_Drive_DriveFile();
         $file->setName($folderName);
@@ -225,6 +294,12 @@ class GoogleDrive
 
         return $createdFile;
     }
+
+    /**
+     * @param null $pageToken
+     * @param null $filters
+     * @return array
+     */
 
     public function getFiles($pageToken=null, $filters=null) {
         try {
