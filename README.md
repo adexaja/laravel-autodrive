@@ -20,13 +20,13 @@ Install via composer - edit your `composer.json` to require the package.
 
 ```js
 "require": {
-    "pulkitjalan/google-apiclient": "3.*"
+    "adexaja/laravel-autodrive": "3.*"
 }
 ```
 
 Then run `composer update` in your terminal to pull it in.
 
-Or use `composer require pulkitjalan/google-apiclient`
+Or use `composer require adexaja/laravel-autodrive`
 
 ## Laravel
 
