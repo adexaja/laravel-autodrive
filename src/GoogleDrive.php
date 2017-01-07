@@ -96,12 +96,8 @@ class GoogleDrive
                 'q'=>"mimeType = 'application/vnd.google-apps.folder' and title = '" . $this->dirInfo . "'",
                 'pageSize'=>1
             );
-            try{
                 $gquery = $this->service->files->listFiles($params);
                 $sysdir = $gquery->getFiles();
-            }catch (\Exception $ex){
-                $sysdir = [];
-            }
             // sysdir not found
             if(empty($sysdir)):
                 // create system directory
@@ -125,17 +121,13 @@ class GoogleDrive
             'q'=>"mimeType = 'application/vnd.google-apps.folder' and title = '" . $name . "'",
             'pageSize'=>1
         );
-        try{
             $gquery = $this->service->files->listFiles($params);
             $sysdir = $gquery->getFiles();
-        }catch (\Exception $ex){
-            $sysdir = [];
-        }
 
         // sysdir not found
         if(empty($sysdir)):
             // create system directory
-            $sysdir = $this->newDirectory($this->dirInfo, null, "public");
+            $sysdir = $this->newDirectory($name, null, "public");
             $this->setSystemDirectoryInfo($sysdir);
         else:
             $sysdir = $sysdir[0];
