@@ -27,7 +27,7 @@ class GoogleDrive
     /**
      * @var \Google_Service_Oauth2
      */
-    protected $oAuth2; //oath cient
+    protected $oAuth2;
 
     protected $appName = "Google Drive Smart Kampus";
 
@@ -96,8 +96,12 @@ class GoogleDrive
                 'q'=>"mimeType = 'application/vnd.google-apps.folder' and title = '" . $this->dirInfo . "'",
                 'pageSize'=>1
             );
-            $gquery = $this->service->files->listFiles($params);
-            $sysdir = $gquery->getFiles();
+            try{
+                $gquery = $this->service->files->listFiles($params);
+                $sysdir = $gquery->getFiles();
+            }catch (\Exception $ex){
+                $sysdir = [];
+            }
             // sysdir not found
             if(empty($sysdir)):
                 // create system directory
@@ -116,21 +120,26 @@ class GoogleDrive
      * @return \Google_Service_Drive_DriveFile
      */
     public function isDirectoryExists($name) {
-            // there was a problem - re-make the system directory
-            $params = array(
-                'q'=>"mimeType = 'application/vnd.google-apps.folder' and title = '" . $name . "'",
-                'pageSize'=>1
-            );
+        // there was a problem - re-make the system directory
+        $params = array(
+            'q'=>"mimeType = 'application/vnd.google-apps.folder' and title = '" . $name . "'",
+            'pageSize'=>1
+        );
+        try{
             $gquery = $this->service->files->listFiles($params);
             $sysdir = $gquery->getFiles();
-            // sysdir not found
-            if(empty($sysdir)):
-                // create system directory
-                $sysdir = $this->newDirectory($this->dirInfo, null, "public");
-                $this->setSystemDirectoryInfo($sysdir);
-            else:
-                $sysdir = $sysdir[0];
-            endif;
+        }catch (\Exception $ex){
+            $sysdir = [];
+        }
+
+        // sysdir not found
+        if(empty($sysdir)):
+            // create system directory
+            $sysdir = $this->newDirectory($this->dirInfo, null, "public");
+            $this->setSystemDirectoryInfo($sysdir);
+        else:
+            $sysdir = $sysdir[0];
+        endif;
         // return the system directory
         return $sysdir;
     }
