@@ -53,30 +53,71 @@ class Client
         // set developer key
         $this->client->setDeveloperKey(array_get($config, 'developer_key', ''));
 
-        $this->fileToken = array_get($config, 'fileToken', '');
+        try{
+            $this->fileToken = array_get($config, 'fileToken', '');
 
-        // auth for service account
-        if (array_get($config, 'service.enable', false)) {
-            $this->auth($userEmail);
-        }
-
-
-        if($this->fileToken) {
-            if(file_exists($this->fileToken))
-                $this->token = json_decode(file_get_contents($this->fileToken), true);
-        } else {
-            $this->token = Session::get($this->tokenKey);
-        }
+            // auth for service account
+            if (array_get($config, 'service.enable', false)) {
+                $this->auth($userEmail);
+            }
 
 
-        if($this->token) {
-            $this->client->setAccessToken($this->token);
-        } else if(request()->has("code")) {
-            $this->client->authenticate(request()->input("code"));
-            $this->token = $this->client->getAccessToken();
-            $this->client->setAccessToken($this->token);
-        }else {
-            // no available token
+            if($this->fileToken) {
+                if(file_exists($this->fileToken))
+                    $this->token = json_decode(file_get_contents($this->fileToken), true);
+            } else {
+                $this->token = Session::get($this->tokenKey);
+            }
+
+
+            if($this->token) {
+                $this->client->setAccessToken($this->token);
+            } else if(request()->has("code")) {
+                $this->client->authenticate(request()->input("code"));
+                $this->token = $this->client->getAccessToken();
+                $this->client->setAccessToken($this->token);
+            }else {
+                // no available token
+                if(!empty(array_get($config, 'redirect_uri', ''))) {
+                    // redirect for authorization
+                    // redirect($this->Client->createAuthUrl());
+                    echo "<div style='background: rgba(0, 177, 225, 0.15); padding: 10px 15px; float: left; width: 100%; border-left: 6px solid #00b1e1;'>";
+                    echo "  <h1 style='padding: 0px; margin: 0px; font-size: 24px; color: #0788ab; font-weight: bold;'>Pemberitahuan</h1>";
+                    echo "  <p style=''>Akun anda belum terintegrasi dengan sistem kami. Silahkan melakukan konfirmasi akun ketika ada jendela popup. Pastikan anda tidak memblokir jendela popup. Jika jendela popup belum muncul, anda bisa menekan ikon refresh.</p>";
+                    echo "</div>";
+                    ?>
+                    <script>
+                        var w = 500;
+                        var h = 400;
+                        var left = (screen.width/2)-(w/2);
+                        var top = (screen.height/2)-(h/2);
+                        var win = window.open('<?= $this->client->createAuthUrl(); ?>', '_blank', ', width='+w+', height='+h+', top='+top+', left='+left+', toolbar=0,location=0,menubar=0,scrollbars=0, resizable=0, opyhistory=no');
+                        win.focus();
+                    </script>
+                    <?
+                }
+            }
+            // check to make sure access token is not expired
+            if($this->client->isAccessTokenExpired() and $this->token) {
+                $tokens = (is_array($this->token)) ? $this->token : json_decode($this->token);
+                $refreshToken = $tokens["refresh_token"];
+                $this->client->refreshToken($refreshToken);
+                $this->token = $this->client->getAccessToken();
+            }
+
+            // save access token
+            if(!$this->client->isAccessTokenExpired()) {
+                if($this->fileToken) {
+                    // $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
+                    if(!file_exists(dirname($this->fileToken))) {
+                        mkdir(dirname($this->fileToken), 777, true);
+                    }
+                    file_put_contents($this->fileToken, json_encode($this->token));
+                } else {
+                    Session::put($this->tokenKey, $this->token);
+                }
+            }
+        }catch (\Exception $ex){
             if(!empty(array_get($config, 'redirect_uri', ''))) {
                 // redirect for authorization
                 // redirect($this->Client->createAuthUrl());
@@ -96,26 +137,8 @@ class Client
                 <?
             }
         }
-        // check to make sure access token is not expired
-        if($this->client->isAccessTokenExpired() and $this->token) {
-            $tokens = (is_array($this->token)) ? $this->token : json_decode($this->token);
-            $refreshToken = $tokens["refresh_token"];
-            $this->client->refreshToken($refreshToken);
-            $this->token = $this->client->getAccessToken();
-        }
 
-        // save access token
-        if(!$this->client->isAccessTokenExpired()) {
-            if($this->fileToken) {
-                // $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
-                if(!file_exists(dirname($this->fileToken))) {
-                    mkdir(dirname($this->fileToken), 777, true);
-                }
-                file_put_contents($this->fileToken, json_encode($this->token));
-            } else {
-                Session::put($this->tokenKey, $this->token);
-            }
-        }
+
     }
 
     /**
