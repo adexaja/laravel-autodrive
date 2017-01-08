@@ -50,7 +50,6 @@ class Client
         $this->client->setScopes(array_get($config, 'scopes', []));
         $this->client->setAccessType(array_get($config, 'access_type', 'online'));
         $this->client->setApprovalPrompt(array_get($config, 'approval_prompt', 'auto'));
-
         // set developer key
         $this->client->setDeveloperKey(array_get($config, 'developer_key', ''));
 
@@ -61,6 +60,7 @@ class Client
             $this->auth($userEmail);
         }
 
+
         if($this->fileToken) {
             if(file_exists($this->fileToken))
                 $this->token = json_decode(file_get_contents($this->fileToken), true);
@@ -68,14 +68,14 @@ class Client
             $this->token = Session::get($this->tokenKey);
         }
 
+
         if($this->token) {
             $this->client->setAccessToken($this->token);
         } else if(request()->has("code")) {
             $this->client->authenticate(request()->input("code"));
             $this->token = $this->client->getAccessToken();
             $this->client->setAccessToken($this->token);
-        }
-         else {
+        }else {
             // no available token
             if(!empty(array_get($config, 'redirect_uri', ''))) {
                 // redirect for authorization
@@ -98,8 +98,8 @@ class Client
         }
         // check to make sure access token is not expired
         if($this->client->isAccessTokenExpired() and $this->token) {
-            $tokens = json_decode($this->token);
-            $refreshToken = $tokens->refresh_token;
+            $tokens = (is_array($this->token)) ? $this->token : json_decode($this->token);
+            $refreshToken = $tokens["refresh_token"];
             $this->client->refreshToken($refreshToken);
             $this->token = $this->client->getAccessToken();
         }
@@ -109,7 +109,7 @@ class Client
             if($this->fileToken) {
                 // $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
                 if(!file_exists(dirname($this->fileToken))) {
-                    mkdir(dirname($this->fileToken), 0777, true);
+                    mkdir(dirname($this->fileToken), 777, true);
                 }
                 file_put_contents($this->fileToken, json_encode($this->token));
             } else {
