@@ -31,7 +31,7 @@ class GoogleDrive
 
     protected $appName = "Google Drive Smart Kampus";
 
-    protected $dirInfo = "adexaja.drive";
+    protected $dirInfo = "staff.stie.drive";
 
     public function __construct(Client $client){
         $this->client = $client;
@@ -58,13 +58,11 @@ class GoogleDrive
         $permission = new \Google_Service_Drive_Permission();
         switch($allow):
             case "private":
-                $permission->setRole('me');
-                $permission->setType('default');
+                $permission->setType('user');
                 $permission->setRole('owner');
                 break;
 
             default:
-                $permission->setRole('');
                 $permission->setType('anyone');
                 $permission->setRole('reader');
                 break;
@@ -74,7 +72,7 @@ class GoogleDrive
 
     public function getSystemDirectoryInfo() {
         $dirinfo = Session::get($this->appName . "." . $this->dirInfo);
-        return json_decode($dirinfo);
+        return $dirinfo;
     }
 
     public function setSystemDirectoryInfo($sysdirinfo) {
@@ -85,19 +83,14 @@ class GoogleDrive
      * @return \Google_Service_Drive_DriveFile
      */
     public function getSystemDirectory() {
-        $dirinfo = $this->getSystemDirectoryInfo();
-        if(!empty($dirinfo)):
-            if(!empty($dirinfo->id)):
-                $sysdir = $this->service->files->get($dirinfo->id);
-            endif;
-        else:
+
             // there was a problem - re-make the system directory
             $params = array(
-                'q'=>"mimeType = 'application/vnd.google-apps.folder' and title = '" . $this->dirInfo . "'",
+                'q'=>"mimeType = 'application/vnd.google-apps.folder' and name = '" . $this->dirInfo . "'",
                 'pageSize'=>1
             );
-                $gquery = $this->service->files->listFiles($params);
-                $sysdir = $gquery->getFiles();
+            $gquery = $this->service->files->listFiles($params);
+            $sysdir = $gquery->getFiles();
             // sysdir not found
             if(empty($sysdir)):
                 // create system directory
@@ -106,28 +99,36 @@ class GoogleDrive
             else:
                 $sysdir = $sysdir[0];
             endif;
-        endif;
         // return the system directory
-        return $sysdir;
+            return $sysdir;
     }
 
     /**
      * @param $name
      * @return \Google_Service_Drive_DriveFile
      */
-    public function isDirectoryExists($name) {
+    public function isDirectoryExists($name, $parentId = null) {
         // there was a problem - re-make the system directory
-        $params = array(
-            'q'=>"mimeType = 'application/vnd.google-apps.folder' and title = '" . $name . "'",
-            'pageSize'=>1
-        );
-            $gquery = $this->service->files->listFiles($params);
-            $sysdir = $gquery->getFiles();
+
+        if(!is_null($parentId)){
+            $params = array(
+                'q'=>"mimeType = 'application/vnd.google-apps.folder' and name = '" . $name . "' and '$parentId' in parents",
+                'pageSize'=>1
+            );
+        }else{
+            $params = array(
+                'q'=>"mimeType = 'application/vnd.google-apps.folder' and name = '" . $name . "'",
+                'pageSize'=>1
+            );
+        }
+
+        $gquery = $this->service->files->listFiles($params);
+        $sysdir = $gquery->getFiles();
 
         // sysdir not found
         if(empty($sysdir)):
             // create system directory
-            $sysdir = $this->newDirectory($name, null, "public");
+            $sysdir = $this->newDirectory($name, $parentId, "public");
             $this->setSystemDirectoryInfo($sysdir);
         else:
             $sysdir = $sysdir[0];
@@ -136,8 +137,8 @@ class GoogleDrive
         return $sysdir;
     }
 
-    public function getFileUrl(\Google_Service_Drive_DriveFile $file, $parentId) {
-        return "https://googledrive.com/host/{$parentId}/" . $file->getName();
+    public function getFileUrl($fileId) {
+        return "https://drive.google.com/open?id=" . $fileId;
     }
 
     /**
@@ -337,7 +338,7 @@ class GoogleDrive
                 endif;
 
                 $files = $this->service->files->listFiles($parameters);
-                $result = $files;
+                $result = $files->getFiles();
                 $pageToken = $files->getNextPageToken();
 
             } catch (Exception $ex) {
