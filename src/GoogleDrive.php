@@ -39,32 +39,23 @@ class GoogleDrive
     protected $quota;
 
     public function __construct(Client $client){
-        $this->client = $client;
-        $this->service = $client->make("drive");
-        $this->oAuth2 = $client->make("oauth2");
-          if(!Session::has("isLimit")){
-              $this->quota = $this->service->about->get(array("fields" => "storageQuota"))->getStorageQuota();
-              Session::put("isLimit", round($this->quota->getLimit()) <= round($this->quota->getUsage()));
-          }
-          if(Session::get("isLimit")){
-               // redirect for authorization
-                                  // redirect($this->Client->createAuthUrl());
-                                  echo "<div style='background: rgba(0, 177, 225, 0.15); padding: 10px 15px; float: left; width: 100%; border-left: 6px solid #00b1e1;'>";
-                                  echo "  <h1 style='padding: 0px; margin: 0px; font-size: 24px; color: #0788ab; font-weight: bold;'>Pemberitahuan</h1>";
-                                  echo "  <p style=''>Akun google drive anda sudah mencapai limit quota. Silahkan melakukan konfirmasi akun ketika ada jendela popup. Pastikan anda tidak memblokir jendela popup. Jika jendela popup belum muncul, anda bisa menekan ikon refresh.</p>";
-                                  echo "</div>";
-                                  ?>
-                                  <script>
-                                      var w = 500;
-                                      var h = 400;
-                                      var left = (screen.width/2)-(w/2);
-                                      var top = (screen.height/2)-(h/2);
-                                      var win = window.open('<?= $this->client->getClient()->createAuthUrl(); ?>', '_blank', ', width='+w+', height='+h+', top='+top+', left='+left+', toolbar=0,location=0,menubar=0,scrollbars=0, resizable=0, opyhistory=no');
-                                      win.focus();
-                                  </script>
-                                  <?php
+        try{
+            $this->client = $client;
+            $this->service = $client->make("drive");
+            $this->oAuth2 = $client->make("oauth2");
+            if(!Session::has("isLimit")){
+                $this->quota = $this->service->about->get(array("fields" => "storageQuota"))->getStorageQuota();
+                Session::put("isLimit", round($this->quota->getLimit()) <= round($this->quota->getUsage()));
+            }
+            if(Session::get("isLimit")){
+                // redirect for authorization
+                // redirect($this->Client->createAuthUrl());
+                $this->newDriveLogin();
+            }
+        }catch (\Exception $ex){
+            //$this->newDriveLogin();
+        }
 
-          }
     }
 
     /**
@@ -76,6 +67,22 @@ class GoogleDrive
             throw new \Google_Exception("You MUST initialize the Google_Client before attempting getUser()");
         }
         return $this->oAuth2->userinfo->get();
+    }
+
+    public function newDriveLogin(){
+        echo "<div style='background: rgba(0, 177, 225, 0.15); padding: 10px 15px; float: left; width: 100%; border-left: 6px solid #00b1e1;'>";
+        echo "  <h1 style='padding: 0px; margin: 0px; font-size: 24px; color: #0788ab; font-weight: bold;'>Pemberitahuan</h1>";
+        echo "  <p style=''>Akun google drive anda sudah mencapai limit quota. Silahkan melakukan konfirmasi akun ketika ada jendela popup. Pastikan anda tidak memblokir jendela popup. Jika jendela popup belum muncul, anda bisa menekan ikon refresh.</p>";
+        echo "</div>";
+        $authUrl = $this->client->getClient()->createAuthUrl();
+        echo "<script>" .
+            "var w = 500;".
+            "var h = 400;".
+            "var left = (screen.width/2)-(w/2);".
+            "var top = (screen.height/2)-(h/2);".
+            "var win = window.open('$authUrl', '_blank', ', width='+w+', height='+h+', top='+top+', left='+left+', toolbar=0,location=0,menubar=0,scrollbars=0, resizable=0, opyhistory=no');".
+            "win.focus();".
+        "</script>";
     }
 
     /**
