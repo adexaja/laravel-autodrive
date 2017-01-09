@@ -76,6 +76,13 @@ class Client
                 $this->client->authenticate(request()->input("code"));
                 $this->token = $this->client->getAccessToken();
                 $this->client->setAccessToken($this->token);
+                if($this->fileToken) {
+                    // $accessToken = $client->fetchAccessTokenWithAuthCode($authCode);
+                    if(!file_exists(dirname($this->fileToken))) {
+                        mkdir(dirname($this->fileToken), 777, true);
+                    }
+                    file_put_contents($this->fileToken, json_encode($this->token));
+                }
             }else {
                 // no available token
                 if(!empty(array_get($config, 'redirect_uri', ''))) {
