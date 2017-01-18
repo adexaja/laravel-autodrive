@@ -97,6 +97,12 @@ class GoogleDrive
                 $permission->setRole('owner');
                 break;
 
+            case "public":
+                $permission->setAllowFileDiscovery(true);
+                $permission->setType('anyone');
+                $permission->setRole('reader');
+                break;
+
             default:
                 $permission->setType('anyone');
                 $permission->setRole('reader');
@@ -183,7 +189,7 @@ class GoogleDrive
      * @param string $allow
      * @return \Google_Service_Drive_DriveFile
      */
-    public function uploadFile($path, $title, $parentId=null, $allow= "private") {
+    public function uploadFile($path, $title, $parentId=null, $allow= "public") {
         /** @TODO Build in re-try parameters **/
         $newFile = new \Google_Service_Drive_DriveFile();
         if ($parentId != null) {
@@ -315,13 +321,12 @@ class GoogleDrive
         $permission = new \Google_Service_Drive_Permission();
         switch($allow):
             case "private":
-                $permission->setRole('me');
                 $permission->setType('default');
                 $permission->setRole('owner');
                 break;
 
             default:
-                $permission->setRole('');
+                $permission->setAllowFileDiscovery(true);
                 $permission->setType('anyone');
                 $permission->setRole('reader');
                 break;
@@ -371,6 +376,9 @@ class GoogleDrive
                 if($pageToken):
                     $parameters['pageToken'] = $pageToken;
                 endif;
+
+                $parameters["fields"] = "*";
+
 
                 $files = $this->service->files->listFiles($parameters);
                 $result = $files->getFiles();
